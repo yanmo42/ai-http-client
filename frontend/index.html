@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Assistant</title>
+
+  <!-- Marked.js for Markdown -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- KaTeX for Math rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+
+  <!--link rel="stylesheet" href="style.css" -->
+  <style>
+    body {
+      background: #23272e;
+      color: #ececec;
+      font-family: 'JetBrains Mono', 'Fira Mono', 'Consolas', 'monospace', sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-container {
+      max-width: 620px;
+      margin: 40px auto 0 auto;
+      background: #181a20e6;
+      border-radius: 16px;
+      box-shadow: 0 0 24px #0009;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 80vh;
+    }
+    #chat-history {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 24px;
+      font-size: 1rem;
+    }
+    .chat-entry {
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .chat-entry.user {
+      text-align: right;
+      color: #71b7ff;
+      font-weight: 500;
+    }
+    .chat-entry.assistant {
+      text-align: left;
+      color: #ececec;
+    }
+    .chat-entry .ai-msg {
+      text-align: left;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 18px 24px;
+      background: #14151ae0;
+      border-radius: 0 0 16px 16px;
+    }
+    select, input[type="text"] {
+      background: #23272e;
+      color: #ececec;
+      border: 1px solid #353845;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 1rem;
+    }
+    #send-btn {
+      background: #71b7ff;
+      color: #16171c;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.18s;
+    }
+    #send-btn:hover { background: #40a9ff; }
+
+    /* Markdown code blocks */
+    pre, code {
+      background: #17181e;
+      color: #85ffc7;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.98em;
+      font-family: 'JetBrains Mono', 'Fira Mono', 'Consolas', monospace;
+      overflow-x: auto;
+      line-height: 1.45;
+      margin: 8px 0;
+    }
+    pre { margin-bottom: 18px; }
+    blockquote {
+      border-left: 4px solid #71b7ff;
+      margin: 10px 0;
+      padding: 8px 16px;
+      background: #26283b;
+      color: #a0b0c0;
+      border-radius: 4px;
+    }
+    table {
+      border-collapse: collapse;
+      background: #15161b;
+      margin: 10px 0;
+      font-size: 0.98em;
+    }
+    th, td {
+      border: 1px solid #353845;
+      padding: 6px 10px;
+    }
+    a {
+      color: #71b7ff;
+      text-decoration: underline;
+    }
+    /* KaTeX block math alignment */
+    .katex-display { margin: 14px 0 !important; }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div id="chat-history"></div>
+    <div class="controls">
+      <select id="provider">
+        <option value="openai">OpenAI GPT-4o</option>
+        <option value="gemini">Gemini 1.5 Pro</option>
+        <option value="anthropic">Claude 3 Opus</option>
+      </select>
+      <input id="prompt-input" type="text" placeholder="Ask something..." autocomplete="off" />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
+
