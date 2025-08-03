@@ -1,19 +1,36 @@
-// Handle send button and Enter key
+// Handle send button
 document.getElementById('send-btn').onclick = sendPrompt;
-document.getElementById('prompt-input').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') sendPrompt();
-});
 
-// Add user message to chat (plain text)
-function addToChatHistory(sender, message) {
-    const chatHistory = document.getElementById('chat-history');
-    const entry = document.createElement('div');
-    entry.className = `chat-entry ${sender}`;
-    entry.textContent = message;
-    chatHistory.appendChild(entry);
-    chatHistory.scrollTop = chatHistory.scrollHeight;
+const promptBox = document.getElementById('prompt-input');
+
+/* ───────────── keyboard handling ─────────────
+ * • Enter (without Shift)  → send
+ * • Shift+Enter            → newline
+ * • auto-expand textarea height
+ */
+promptBox.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();        // keep the newline out
+    sendPrompt();
+  }
+});
+promptBox.addEventListener('input', autoGrow);
+function autoGrow() {
+  this.style.height = 'auto';
+  this.style.height = this.scrollHeight + 'px';
 }
 
+/* ---------- add message to history (plain text) ---------- */
+function addToChatHistory(sender, message) {
+  const chatHistory = document.getElementById('chat-history');
+  const entry = document.createElement('div');
+  entry.className = `chat-entry ${sender}`;
+  entry.textContent = message;
+  chatHistory.appendChild(entry);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
+}
+
+/* ---------- markdown / math helpers (unchanged) ---------- */
 function fixMathDelimiters(mdText) {
     // Replace \[ ... \] and [ ... ] with $$ ... $$
     mdText = mdText.replace(/\\?\[([\s\S]+?)\\?\]/g, (match, math) => {
@@ -38,7 +55,7 @@ function mergeMultilineBlockMath(mdText) {
 }
 
 function renderAIResponse(mdText) {
-    mdText = fixMathDelimiters(mdText);   // <-- ADD THIS LINE!
+    mdText = fixMathDelimiters(mdText);   // ADD THIS LINE!
     mdText = mergeMultilineBlockMath(mdText); 
     const chatHistory = document.getElementById('chat-history');
     const html = marked.parse(mdText);
@@ -47,35 +64,43 @@ function renderAIResponse(mdText) {
     entry.innerHTML = html;
     chatHistory.appendChild(entry);
 
+    // Make sure KaTeX renders the math
     renderMathInElement(entry, {
         delimiters: [
             { left: "$$", right: "$$", display: true },
             { left: "$", right: "$", display: false },
             { left: "\\(", right: "\\)", display: false },
             { left: "\\[", right: "\\]", display: true }
-        ] 
+        ]
     });
 
     chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
-// Main send function
+/* ------------------ main send routine ------------------ */
+
+
 async function sendPrompt() {
     const promptInput = document.getElementById('prompt-input');
     const providerSelect = document.getElementById('provider');
     const prompt = promptInput.value.trim();
+    const user_id = "ian";
     if (!prompt) return;
 
     // Add user's message as plain text
     addToChatHistory('user', prompt);
     promptInput.value = '';
 
-    // Fetch assistant response
+    // Fetch assistant response with user_id for context tracking
     try {
         const response = await fetch('http://localhost:8000/chat', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ prompt: prompt, provider: providerSelect.value })
+            body: JSON.stringify({
+                prompt: prompt,
+                provider: providerSelect.value,
+                user_id: user_id  // Use a session ID or user-specific identifier
+            })
         });
 
         if (response.ok) {
@@ -91,3 +116,4 @@ async function sendPrompt() {
     }
 }
 
+ 
