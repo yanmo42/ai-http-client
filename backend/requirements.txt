@@ -6,4 +6,5 @@ anthropic
 pyyaml
 pydantic
 python-dotenv
+json
 
