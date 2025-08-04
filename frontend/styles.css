@@ -1,31 +1,77 @@
-/* Global Styles */
+/* ──────────────────────────────────────────────────────────────
+   Midnight Frost UI
+   Fully transparent wallpaper‑aware background, with frosted
+   panels and bright neon accents.  Works even when Hyprland adds
+   its own 0.85 opacity multiplier.
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Core palette  — tweak the alphas to taste */
+  --bg:            rgba(10,15,25,0.60);   /* global backdrop tint */
+  --fg:            rgba(220,230,245,0.95);
+  --accent:        rgba(90,180,255,0.90);
+  --accent-h:      rgba(120,200,255,1.00);
+
+  /* Panel backgrounds */
+  --sidebar-bg:    rgba(15,20,35,0.85);
+  --container-bg:  rgba(20,25,40,0.80);
+  --controls-bg:   rgba(15,20,30,0.75);
+
+  /* Lines / borders / shadows */
+  --sidebar-line:  rgba(120,130,150,0.20);
+  --shadow-color:  rgba(0,0,0,0.50);
+
+  /* Code / blockquote / links */
+  --code-bg:       rgba(25,30,45,0.55);
+  --code-fg:       rgba(140,255,230,0.90);
+  --blockquote-bg: rgba(35,30,50,0.50);
+  --blockquote-border: rgba(140,100,255,0.50);
+  --blockquote-fg: rgba(200,190,220,0.85);
+  --table-bg:      rgba(20,25,35,0.50);
+  --link-color:    rgba(130,190,255,0.90);
+}
+
+/* ─── Global Layout ─────────────────────────────────────────── */
 body {
-  background: #23272e;
-  color: #ececec;
+  background: var(--bg) !important;   /* survive Hyprland opacity */
+  color: var(--fg);
   font-family: 'JetBrains Mono','Fira Mono','Consolas',monospace,sans-serif;
   margin: 0;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .app-wrapper {
+
+  position: fixed;
+  inset: 0;
   display: flex;
-  width: 80vw;
-  height: 85vh;
-  margin: auto;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+
+  background: var(--bg);              /* same tint for entire app */
+  border-radius: 0;
+  box-shadow: none;
 }
 
-/* Sidebar */
+/* ─── Sidebar ───────────────────────────────────────────────── */
 .sidebar {
   width: 20%;
-  background: #1d1f25;
+  background: var(--sidebar-bg);
   padding: 20px;
-  border-radius: 16px;
-  margin-right: 20px;
+  border-radius: 12px 0 0 12px;
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(8px);
+  border-right: 1px solid var(--sidebar-line);
+}
+
+#session-bar {
+  padding: .5rem;
+  border-bottom: 1px solid var(--sidebar-line);
+  margin-bottom: 1rem;
 }
 
 #chat-list {
@@ -40,78 +86,74 @@ body {
   cursor: pointer;
   border-radius: 6px;
   margin-bottom: 8px;
+  transition: background .15s;
 }
 
 #chat-list li:hover,
 #chat-list li.active {
-  background: #3a3d48;
+  background: var(--sidebar-line);
 }
 
-#new-chat-btn {
-  background: #71b7ff;
-  color: #16171c;
+/* Sidebar footer buttons */
+.sidebar-footer {
+  display: flex;
+  gap: .5rem;
+  margin-top: auto;
+}
+
+.btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--accent);
+  color: var(--fg);
   border: none;
   border-radius: 6px;
-  padding: 10px;
-  cursor: pointer;
   font-weight: bold;
-  margin-top: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: background .2s;
 }
 
-#new-chat-btn:hover {
-  background: #40a9ff;
-}
+.btn:hover { background: var(--accent-h); }
 
-/* Chat Container */
+/* ─── Chat Container ───────────────────────────────────────── */
 .chat-container {
   flex: 1;
-  background: #181a20e6;
-  border-radius: 16px;
-  box-shadow: 0 0 24px #0009;
+  background: var(--container-bg);
+  border-radius: 0 12px 12px 0;
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(8px);
+  border-left: 1px solid var(--sidebar-line);
 }
 
-/* Chat History */
 #chat-history {
   flex: 1;
   overflow-y: auto;
   padding: 24px;
   font-size: 1rem;
-  max-height: 70vh;
 }
 
-/* Chat Bubbles */
-.chat-entry {
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
+.chat-entry { margin-bottom: 20px; line-height: 1.6; }
+.chat-entry.user       { text-align: right; color: var(--accent); font-weight: 500; }
+.chat-entry.assistant  { color: var(--fg); }
 
-.chat-entry.user {
-  text-align: right;
-  color: #71b7ff;
-  font-weight: 500;
-}
-
-.chat-entry.assistant {
-  color: #ececec;
-}
-
-/* Controls */
+/* Controls bar */
 .controls {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 18px 24px;
-  background: #14151ae0;
-  border-radius: 0 0 16px 16px;
+  background: var(--controls-bg);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--sidebar-line);
+  border-radius: 0 0 12px 0;
 }
 
-select,
-textarea {
-  background: #23272e;
-  color: #ececec;
-  border: 1px solid #353845;
+select, textarea {
+  background: var(--container-bg);
+  color: var(--fg);
+  border: 1px solid var(--sidebar-line);
   border-radius: 6px;
   font-size: 1rem;
   padding: 6px 12px;
@@ -128,61 +170,55 @@ textarea {
 }
 
 #send-btn {
-  background: #71b7ff;
-  color: #16171c;
+  background: var(--accent);
+  color: var(--fg);
   font-weight: bold;
   cursor: pointer;
   border: none;
   border-radius: 6px;
   padding: 8px 18px;
   font-size: 1rem;
-  transition: background 0.18s;
+  transition: background .18s;
 }
 
-#send-btn:hover {
-  background: #40a9ff;
-}
+#send-btn:hover { background: var(--accent-h); }
 
-/* Markdown Overrides */
-pre,
-code {
-  background: #17181e;
-  color: #85ffc7;
+/* ─── Markdown Overrides ───────────────────────────────────── */
+pre, code {
+  background: var(--code-bg);
+  color: var(--code-fg);
   border-radius: 6px;
   padding: 8px 12px;
-  font-size: 0.98em;
+  font-size: .98em;
   overflow-x: auto;
   line-height: 1.45;
 }
 
 blockquote {
-  border-left: 4px solid #71b7ff;
-  background: #26283b;
+  border-left: 4px solid var(--blockquote-border);
+  background: var(--blockquote-bg);
   margin: 10px 0;
   padding: 8px 16px;
-  color: #a0b0c0;
+  color: var(--blockquote-fg);
   border-radius: 4px;
 }
 
 table {
   border-collapse: collapse;
-  background: #15161b;
+  background: var(--table-bg);
   margin: 10px 0;
-  font-size: 0.98em;
+  font-size: .98em;
 }
 
-th,
-td {
-  border: 1px solid #353845;
+th, td {
+  border: 1px solid var(--sidebar-line);
   padding: 6px 10px;
 }
 
 a {
-  color: #71b7ff;
+  color: var(--link-color);
   text-decoration: underline;
 }
 
-.katex-display {
-  margin: 14px 0 !important;
-}
+.katex-display { margin: 14px 0 !important; }
 

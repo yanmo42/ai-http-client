@@ -5,27 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AI Assistant</title>
 
-  <!-- Marked.js | KaTeX -->
+  <!-- Marked.js for Markdown rendering -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"></script>
+
+  <!-- KaTeX for math -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css"
+  />
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js"
+  ></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app-wrapper">
-    <!-- Sidebar for multiple chats -->
+    <!-- Sidebar for sessions & chats -->
     <aside class="sidebar">
+      <!-- Session selector -->
+      <div id="session-bar">
+        <select id="session-select">
+          <option value="">Quick Chat (ephemeral)</option>
+        </select>
+      </div>
+
+      <!-- List of chats -->
       <ul id="chat-list"></ul>
-      <button id="new-chat-btn">+ New Chat</button>
+
+      <!-- Footer with both buttons -->
+      <div class="sidebar-footer">
+        <button id="new-session-btn" class="btn">+ New Session</button>
+        <button id="new-chat-btn"    class="btn">+ New Chat</button>
+      </div>
     </aside>
 
     <!-- Main chat area -->
     <div class="chat-container">
+      <!-- History of messages -->
       <div id="chat-history"></div>
 
+      <!-- Controls: provider picker, input box, send -->
       <div class="controls">
         <select id="provider">
           <option value="openai">OpenAI GPT-4o</option>
@@ -33,13 +59,17 @@
           <option value="anthropic">Claude 4 Sonnet</option>
         </select>
 
-        <textarea id="prompt-input" placeholder="Ask something…"></textarea>
+        <textarea
+          id="prompt-input"
+          placeholder="Ask something…"
+        ></textarea>
         <button id="send-btn">Send</button>
       </div>
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <!-- Main JavaScript -->
+  <script defer src="app.js"></script>
 </body>
 </html>
 

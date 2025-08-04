@@ -1,150 +1,171 @@
-// Global state for multiple chats
-let activeChatId = null;
-const chats = {}; // { chatId: [ { sender, content } ] }
+// ─── DOM refs ──────────────────────────────────────────────────────────────────
+const sessionSelect = document.getElementById("session-select");
+const newSessionBtn = document.getElementById("new-session-btn");
+const newChatBtn    = document.getElementById("new-chat-btn");
+const chatList      = document.getElementById("chat-list");
+const chatHistory   = document.getElementById("chat-history");
+const providerSel   = document.getElementById("provider");
+const promptBox     = document.getElementById("prompt-input");
+const sendBtn       = document.getElementById("send-btn");
 
-// Grab DOM elements and initialize
-document.addEventListener('DOMContentLoaded', () => {
-  window.promptBox = document.getElementById('prompt-input');
-  window.chatHistoryEl = document.getElementById('chat-history');
-  window.chatListEl = document.getElementById('chat-list');
-  window.newChatBtn = document.getElementById('new-chat-btn');
-  window.providerSelect = document.getElementById('provider');
-  window.sendBtn = document.getElementById('send-btn');
+// ─── State ─────────────────────────────────────────────────────────────────────
+let currentSessionId = "";   // empty = Quick Chat
+let currentChatId    = "";   // set when you select a persistent chat
+let ephemeralMsgs    = [];
 
-  // Initialize event handlers
-  newChatBtn.onclick = createNewChat;
-  sendBtn.onclick = sendPrompt;
 
-  promptBox.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendPrompt();
-    }
+
+
+ // ─── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  
+ 
+  loadSessions();
+  promptBox.addEventListener("keydown", e => {
+    if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendPrompt(); }
   });
-  promptBox.addEventListener('input', autoGrow);
-
-  // Start with an initial chat session
-  createNewChat();
+  promptBox.addEventListener("input", function(){ this.style.height="auto"; this.style.height=this.scrollHeight+"px"; });
+  sendBtn.addEventListener("click", sendPrompt);
+  newSessionBtn.addEventListener("click", createSession);
+  newChatBtn.addEventListener("click", createChat);
+  sessionSelect.addEventListener("change", onSessionChange);
 });
 
-// Create a new chat session
-function createNewChat() {
-  const newChatId = `chat-${Date.now()}`;
-  chats[newChatId] = [];
-  addChatTab(newChatId);
-  setActiveChat(newChatId);
-}
-
-// Add a tab in the sidebar for a chat
-function addChatTab(chatId) {
-  const li = document.createElement('li');
-  li.textContent = `Chat ${chatListEl.children.length + 1}`;
-  li.dataset.chatId = chatId;
-  li.onclick = () => setActiveChat(chatId);
-  chatListEl.appendChild(li);
-}
-
-// Switch active chat and render its history
-function setActiveChat(chatId) {
-  activeChatId = chatId;
-  Array.from(chatListEl.children).forEach(li => {
-    li.classList.toggle('active', li.dataset.chatId === chatId);
+// ─── Sessions ──────────────────────────────────────────────────────────────────
+async function loadSessions(){
+  const res = await fetch("/sessions");
+  const sessions = await res.json();
+  sessionSelect.innerHTML = `<option value="">Quick Chat (ephemeral)</option>`;
+  sessions.forEach(s=>{
+    let o = document.createElement("option");
+    o.value=s.id; o.textContent=s.name;
+    sessionSelect.append(o);
   });
-  chatHistoryEl.innerHTML = '';
-  chats[chatId].forEach(msg => renderEntry(msg.sender, msg.content));
 }
 
-// Auto-grow textarea height
-function autoGrow() {
-  this.style.height = 'auto';
-  this.style.height = this.scrollHeight + 'px';
-}
-
-// Add a plain text entry to the chat history
-function addToChatHistory(sender, message) {
-  const entry = document.createElement('div');
-  entry.className = `chat-entry ${sender}`;
-  entry.textContent = message;
-  chatHistoryEl.appendChild(entry);
-  chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
-}
-
-// Fix math delimiters for KaTeX
-function fixMathDelimiters(mdText) {
-  mdText = mdText.replace(/\\?\[([\s\S]+?)\\?\]/g, (match, math) => {
-    if (/\]\(.*?\)/.test(match)) return match;
-    return `$$${math.trim()}$$`;
+async function createSession(){
+  const name = prompt("New session name?");
+  if(!name) return;
+  const res = await fetch("/sessions", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({name})
   });
-  mdText = mdText.replace(/\\?\(([\s\S]+?)\\?\)/g, (match, math) => {
-    if (!/[=^_\\]/.test(math)) return match;
-    return `$${math.trim()}$`;
+  const sess = await res.json();
+  await loadSessions();
+  sessionSelect.value = sess.id;
+  onSessionChange();
+}
+
+async function onSessionChange(){
+  currentSessionId = sessionSelect.value;
+  currentChatId = "";
+  chatList.innerHTML = "";
+  chatHistory.innerHTML = "";
+  ephemeralMsgs = [];
+  if(currentSessionId){
+    const res = await fetch(`/sessions/${currentSessionId}/chats`);
+    const chats = await res.json();
+    chats.forEach(c=> addChatToSidebar(c.id,c.title));
+  }
+}
+
+// ─── Chats ─────────────────────────────────────────────────────────────────────
+function addChatToSidebar(id,title){
+  const li = document.createElement("li");
+  li.textContent=title;
+  li.addEventListener("click",()=> selectChat(id));
+  chatList.append(li);
+}
+
+async function createChat(){
+  if(!currentSessionId){
+    ephemeralMsgs=[]; chatHistory.innerHTML="";
+    return;
+  }
+  const res = await fetch(`/sessions/${currentSessionId}/chats`, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({title:"New Chat"})
   });
-  return mdText;
+  const chat = await res.json();
+  addChatToSidebar(chat.id,chat.title);
+  selectChat(chat.id);
 }
 
-// Merge multiline $$ blocks into single lines
-function mergeMultilineBlockMath(mdText) {
-  return mdText.replace(/\$\$([\s\S]*?)\$\$/g, (match, inner) =>
-    `$$${inner.replace(/\n/g, ' ')}$$`
-  );
+async function selectChat(id){
+  currentChatId=id;
+  chatHistory.innerHTML="";
+  const res = await fetch(`/chats/${id}/messages`);
+  const msgs = await res.json();
+  msgs.forEach(m=> addToChatHistory(m.role,m.content));
 }
 
-// Render assistant Markdown + math response
-function renderAIResponse(mdText) {
-  mdText = fixMathDelimiters(mdText);
-  mdText = mergeMultilineBlockMath(mdText);
-  const html = marked.parse(mdText);
-  const entry = document.createElement('div');
-  entry.className = 'chat-entry assistant ai-msg';
-  entry.innerHTML = html;
-  chatHistoryEl.appendChild(entry);
-  renderMathInElement(entry, {
-    delimiters: [
-      { left: '$$', right: '$$', display: true },
-      { left: '$', right: '$', display: false },
-      { left: '\\(', right: '\\)', display: false },
-      { left: '\\[', right: '\\]', display: true },
-    ],
-  });
-  chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
-}
+// ─── Sending ───────────────────────────────────────────────────────────────────
+async function sendPrompt(){
+  const text = promptBox.value.trim();
+  if(!text) return;
+  addToChatHistory("user", text);
 
-// Dispatch to appropriate rendering function
-function renderEntry(sender, content) {
-  if (sender === 'assistant') {
-    renderAIResponse(content);
+  let reply;
+  const payload = {role:"user",content:text};
+  if(currentSessionId && currentChatId){
+    reply = await fetch(`/chats/${currentChatId}/messages`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(payload),
+    }).then(r=>r.json());
   } else {
-    addToChatHistory(sender, content);
+    ephemeralMsgs.push(payload);
+    reply = await fetch("/chat/ephemeral",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({messages:ephemeralMsgs}),
+    }).then(r=>r.json());
+    ephemeralMsgs.push(reply);
   }
+
+  addToChatHistory(reply.role, reply.content);
+  promptBox.value=""; promptBox.style.height="auto";
+  promptBox.focus();
 }
 
-// Send prompt to backend with chat_id context
-async function sendPrompt() {
-  const prompt = promptBox.value.trim();
-  if (!prompt || !activeChatId) return;
-  chats[activeChatId].push({ sender: 'user', content: prompt });
-  renderEntry('user', prompt);
-  promptBox.value = '';
+// ─── Rendering ─────────────────────────────────────────────────────────────────
 
-  try {
-    const res = await fetch('http://localhost:8000/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        prompt,
-        provider: providerSelect.value,
-        user_id: 'ian',
-        chat_id: activeChatId,
-      }),
-    });
-    const data = await res.json();
-    const aiMsg = data.response;
-    chats[activeChatId].push({ sender: 'assistant', content: aiMsg });
-    renderEntry('assistant', aiMsg);
-  } catch (err) {
-    const errMsg = '**Error:** Unable to connect to backend.';
-    chats[activeChatId].push({ sender: 'assistant', content: errMsg });
-    renderEntry('assistant', errMsg);
-  }
+
+function normalizeMathDelimiters(s) {
+  // turn "(<latex>)" into "\(<latex>\)"
+  return s.replace(/\(\\([^()]+)\\\)/g, "\\($1\\)")
+          // turn "[ <latex> ]" into "$$<latex>$$"
+          .replace(/\[\s*([^[]+?)\s*\]/g, "$$$$$1$$$$");
+}
+
+
+
+
+function addToChatHistory(sender, message) {
+  const div = document.createElement("div");
+  div.className = `chat-entry ${sender}`;
+  const safeMsg = normalizeMathDelimiters(message);
+  // 1) Markdown → HTML
+  //    marked.parse will turn ```code``` blocks, lists, **bold**, etc. into HTML
+  div.innerHTML = marked.parse(safeMsg);
+
+  // 2) TeX → KaTeX
+  //    auto-render script gives us `renderMathInElement`
+  renderMathInElement(div, {
+    // these delimiters match what we loaded in index.html
+    delimiters: [
+      {left: "$$", right: "$$", display: true},
+      {left: "\\[", right: "\\]", display: true},
+      {left: "$",  right: "$",  display: false},
+      {left: "\\(", right: "\\)", display: false}
+    ],
+    // you can tweak macros or ignoredTags here if needed
+  });
+
+  // 3) Append and scroll
+  chatHistory.appendChild(div);
+  chatHistory.scrollTop = chatHistory.scrollHeight;
 }
 
